@@ -1,0 +1,1 @@
+# druppa-pointofsale
