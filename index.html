@@ -40,6 +40,7 @@ if(!window.mesasState) {
   window.mesasState = {};
   for(let m=1;m<=4;m++) window.mesasState['mesa'+m] = {items:[], paid:false};
 }
+if(!window.duenoEstadoHoy) window.duenoEstadoHoy = {};
 // Definir playOrderSound como no-op hasta que el barista lo active
 if(!window.playOrderSound) {
   window.playOrderSound = function() {}; // activarSonido() lo reemplaza
@@ -115,6 +116,19 @@ onValue(ref(db, 'mesas'), snap => {
     window.renderMesasScreen?.();
 });
 
+/* ── Listener: estado dueños del día (se reinicia automáticamente cada día) ── */
+function getDuenoDateKey() {
+  return new Date().toLocaleDateString('es-MX',{year:'numeric',month:'2-digit',day:'2-digit'}).split('/').reverse().join('-');
+}
+onValue(ref(db, 'duenosStatus/' + getDuenoDateKey()), snap => {
+  const data = snap.val();
+  window.duenoEstadoHoy = data || {};
+  if(typeof duenoEstadoHoy !== 'undefined') {
+    // Sync al objeto local del script principal
+    Object.assign(duenoEstadoHoy, window.duenoEstadoHoy);
+  }
+});
+
 /* ── Estado de conexión ── */
 onValue(ref(db, '.info/connected'), snap => {
   const ok  = snap.val();
@@ -127,13 +141,13 @@ onValue(ref(db, '.info/connected'), snap => {
 
 <style>
 :root{
-  --cream:#FAF7F2; --cream-dark:#F0EBE0; --espresso:#2C1A0E; --espresso-mid:#5C3D1E;
-  --caramel:#C07840; --caramel-light:#E8A96A; --caramel-pale:#F5DFC0;
-  --sage:#6B7B5E; --text-main:#2C1A0E; --text-muted:#8A7060;
-  --border:#E0D4C0; --border-strong:#C8B89A;
+  --cream:#FCEAC6; --cream-dark:#F5DDB0; --espresso:#253036; --espresso-mid:#3a4a52;
+  --caramel:#FF6602; --caramel-light:#ff8533; --caramel-pale:#FFE4CC;
+  --sage:#6B7B5E; --text-main:#253036; --text-muted:#5a7080;
+  --border:#FF6602; --border-strong:#cc5200;
   --success:#4A7C59; --danger:#B84444;
   --radius:12px; --radius-sm:8px;
-  --shadow:0 2px 16px rgba(44,26,14,0.08); --shadow-md:0 4px 24px rgba(44,26,14,0.12);
+  --shadow:0 2px 16px rgba(37,48,54,0.10); --shadow-md:0 4px 24px rgba(37,48,54,0.15);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text-main);min-height:100vh;}
@@ -146,8 +160,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text-m
   box-shadow:0 2px 12px rgba(0,0,0,0.2);gap:10px;
 }
 .nav-brand{display:flex;align-items:center;gap:9px;flex-shrink:0;}
-.nav-logo{width:33px;height:33px;border-radius:50%;background:var(--caramel);display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;color:white;font-size:14px;}
-.nav-title{font-family:'DM Serif Display',serif;color:var(--cream);font-size:18px;}
+.nav-logo{width:33px;height:33px;border-radius:50%;background:var(--caramel);display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;color:white;font-size:16px;font-weight:700;}
+.nav-title{font-family:'DM Serif Display',serif;color:#FCEAC6;font-size:20px;letter-spacing:0.5px;}
 .nav-tabs{display:flex;gap:3px;flex-wrap:wrap;}
 .nav-tab{padding:7px 12px;border-radius:var(--radius-sm);border:none;background:transparent;color:rgba(250,247,242,0.55);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.18s;}
 .nav-tab:hover{background:rgba(250,247,242,0.1);color:var(--cream);}
@@ -203,11 +217,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text-m
 }
 .jumper-bar::-webkit-scrollbar{height:0;}
 .jump-btn{
-  padding:5px 14px;border-radius:16px;border:1.5px solid var(--border);
-  background:white;color:var(--text-muted);font-size:12px;font-weight:600;
+  padding:5px 14px;border-radius:16px;border:1.5px solid var(--caramel);
+  background:var(--cream);color:var(--text-muted);font-size:12px;font-weight:600;
   cursor:pointer;transition:all 0.18s;white-space:nowrap;flex-shrink:0;
 }
-.jump-btn:hover{border-color:var(--caramel);color:var(--caramel);}
+.jump-btn:hover{border-color:var(--espresso);color:var(--espresso);}
 .jump-btn.active{background:var(--caramel);border-color:var(--caramel);color:white;}
 .menu-sections{padding:0 18px 40px;}
 .menu-section{margin-top:26px;}
@@ -216,11 +230,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text-m
 .menu-section-title{font-family:'DM Serif Display',serif;font-size:19px;color:var(--espresso);}
 .menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(142px,1fr));gap:10px;}
 .menu-item{
-  background:white;border-radius:var(--radius);border:1.5px solid var(--border);
+  background:var(--cream);border-radius:var(--radius);border:2px solid var(--caramel);
   padding:13px;cursor:pointer;transition:all 0.18s;position:relative;
   display:flex;flex-direction:column;gap:5px;
 }
-.menu-item:hover{border-color:var(--caramel);transform:translateY(-2px);box-shadow:var(--shadow);}
+.menu-item:hover{background:var(--caramel-pale);transform:translateY(-2px);box-shadow:var(--shadow);}
 .menu-item:active{transform:translateY(0);}
 .item-emoji{font-size:26px;}
 .item-photo{width:100%;height:76px;object-fit:cover;border-radius:8px;}
@@ -228,12 +242,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text-m
 .item-note{font-size:10px;color:var(--sage);font-weight:600;}
 .item-price{font-size:14px;font-weight:700;color:var(--caramel);}
 
-/* ── ORDER PANEL ── */
-.order-panel{background:white;border-left:1px solid var(--border);display:flex;flex-direction:column;height:calc(100vh - 56px);}
+.order-panel{background:var(--cream);border-left:2px solid var(--caramel);display:flex;flex-direction:column;height:calc(100vh - 56px);}
 .order-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
 .order-title{font-family:'DM Serif Display',serif;font-size:17px;}
 .order-num{color:var(--caramel);}
-.type-toggle{display:flex;gap:3px;background:var(--cream);border-radius:8px;padding:3px;}
+.type-toggle{display:flex;gap:3px;background:var(--cream-dark);border-radius:8px;padding:3px;}
 .type-btn{padding:6px 12px;border-radius:6px;border:none;background:transparent;font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer;transition:all 0.18s;}
 .type-btn.active{background:var(--espresso);color:white;}
 .order-items{flex:1;overflow-y:auto;padding:10px 16px;}
@@ -248,9 +261,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text-m
 .order-item-price{font-size:13px;font-weight:700;color:var(--caramel);white-space:nowrap;}
 .rm-btn{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);background:transparent;cursor:pointer;font-size:13px;font-weight:700;color:var(--text-muted);display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;margin-top:2px;line-height:1;}
 .rm-btn:hover{border-color:var(--danger);color:var(--danger);background:#fff0f0;}
+.edit-item-btn{margin-top:5px;padding:3px 9px;border-radius:6px;border:1.5px solid var(--caramel);background:transparent;color:var(--caramel);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;display:inline-block;}
+.edit-item-btn:hover{background:var(--caramel);color:white;}
 .order-notes{padding:8px 16px;border-top:1px solid var(--border);flex-shrink:0;}
-.notes-input{width:100%;padding:7px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-main);resize:none;outline:none;transition:border-color 0.2s;}
-.notes-input:focus{border-color:var(--caramel);}
+.notes-input{width:100%;padding:7px 11px;border-radius:var(--radius-sm);border:1.5px solid var(--caramel);background:white;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-main);resize:none;outline:none;transition:border-color 0.2s;}
+.notes-input:focus{border-color:var(--espresso);}
 .order-footer{padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0;}
 .totals-row{display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px;}
 .totals-total{font-size:17px;font-weight:700;color:var(--espresso);padding-top:8px;border-top:1.5px solid var(--border);margin-top:4px;display:flex;justify-content:space-between;}
@@ -259,23 +274,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text-m
 .pay-btn.cash{background:var(--success);color:white;}
 .pay-btn.cash:hover{background:#3a6347;}
 .pay-btn.digital{background:var(--espresso);color:white;}
-.pay-btn.digital:hover{background:#1a0e06;}
+.pay-btn.digital:hover{background:#1a2830;}
 .pay-btn:active{transform:scale(0.97);}
 .clear-btn{width:100%;padding:9px;margin-top:7px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:transparent;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-muted);cursor:pointer;transition:all 0.18s;}
 .clear-btn:hover{border-color:var(--danger);color:var(--danger);background:#fff0f0;}
 
-/* ── MODAL PERSONALIZACIÓN ── */
-.modal-overlay{display:none;position:fixed;inset:0;z-index:2000;background:rgba(44,26,14,0.55);align-items:center;justify-content:center;padding:20px;}
+.modal-overlay{display:none;position:fixed;inset:0;z-index:2000;background:rgba(37,48,54,0.6);align-items:center;justify-content:center;padding:20px;}
 .modal-overlay.open{display:flex;}
-.modal{background:white;border-radius:16px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;padding:22px;box-shadow:var(--shadow-md);}
+.modal{background:var(--cream);border-radius:16px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;padding:22px;box-shadow:var(--shadow-md);border:2px solid var(--caramel);}
 .modal-header{margin-bottom:16px;}
 .modal-title{font-family:'DM Serif Display',serif;font-size:21px;margin-bottom:3px;}
 .modal-subtitle{font-size:13px;color:var(--text-muted);}
 .modal-section{margin-bottom:16px;}
 .modal-section-title{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:9px;}
 .option-chips{display:flex;flex-wrap:wrap;gap:7px;}
-.chip{padding:7px 14px;border-radius:18px;border:1.5px solid var(--border);background:white;font-size:13px;cursor:pointer;transition:all 0.15s;color:var(--text-main);}
-.chip:hover{border-color:var(--caramel);}
+.chip{padding:7px 14px;border-radius:18px;border:1.5px solid var(--caramel);background:white;font-size:13px;cursor:pointer;transition:all 0.15s;color:var(--text-main);}
+.chip:hover{border-color:var(--espresso);}
 .chip.selected{background:var(--caramel);border-color:var(--caramel);color:white;font-weight:600;}
 .qty-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);background:transparent;cursor:pointer;font-size:15px;font-weight:700;color:var(--text-muted);display:flex;align-items:center;justify-content:center;transition:all 0.15s;line-height:1;}
 .qty-btn:hover{border-color:var(--caramel);color:var(--caramel);background:var(--caramel-pale);}
@@ -327,7 +341,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text-m
 /* ── STATS ── */
 #screen-stats{padding:0;}
 .stats-layout{display:grid;grid-template-columns:230px 1fr;min-height:calc(100vh - 56px);}
-.stats-sidebar{background:var(--espresso);padding:18px 12px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;}
+.stats-sidebar{background:var(--espresso);padding:18px 12px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;position:sticky;top:56px;height:calc(100vh - 56px);align-self:start;}
 .sidebar-section-title{font-size:10px;font-weight:700;color:rgba(250,247,242,0.38);letter-spacing:1px;text-transform:uppercase;padding:12px 10px 5px;}
 .sidebar-btn{padding:9px 13px;border-radius:var(--radius-sm);border:none;background:transparent;color:rgba(250,247,242,0.65);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.18s;text-align:left;display:flex;align-items:center;gap:8px;}
 .sidebar-btn:hover{background:rgba(250,247,242,0.08);color:var(--cream);}
@@ -412,7 +426,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.7);cursor:
 .mesas-title{font-family:'DM Serif Display',serif;font-size:26px;color:var(--espresso);margin-bottom:20px;}
 .mesas-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
 @media(min-width:700px){.mesas-grid{grid-template-columns:repeat(4,1fr);}}
-.mesa-card{background:white;border-radius:16px;border:2px solid var(--border);overflow:hidden;box-shadow:var(--shadow);transition:all 0.2s;}
+.mesa-card{background:var(--cream);border-radius:16px;border:2px solid var(--border);overflow:hidden;box-shadow:var(--shadow);transition:all 0.2s;}
 .mesa-card.ocupada{border-color:var(--caramel);}
 .mesa-card-header{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
 .mesa-card-num{font-family:'DM Serif Display',serif;font-size:20px;color:var(--espresso);}
@@ -423,7 +437,9 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.7);cursor:
 .mesa-card-body{padding:14px 16px;}
 .mesa-item-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;}
 .mesa-subtotal{font-size:15px;font-weight:700;color:var(--espresso);padding-top:8px;margin-top:8px;border-top:1.5px solid var(--border);display:flex;justify-content:space-between;}
-.mesa-card-footer{padding:10px 14px;display:flex;gap:8px;border-top:1px solid var(--border);}
+.mesa-card-footer{padding:10px 14px;display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--border);}
+.mesa-add-btn{width:100%;padding:9px;border-radius:var(--radius-sm);border:1.5px dashed var(--caramel);background:var(--caramel-pale);color:var(--caramel);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.18s;}
+.mesa-add-btn:hover{background:var(--caramel);color:white;}
 .mesa-pay-btn{flex:1;padding:9px;border-radius:var(--radius-sm);border:none;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.18s;}
 .mesa-pay-cash{background:var(--success);color:white;}
 .mesa-pay-digital{background:var(--espresso);color:white;}
@@ -504,7 +520,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.7);cursor:
     <div id="modal-options"></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-add"    onclick="confirmAddToOrder()">+ Agregar</button>
+      <button class="btn-add" id="btn-add" onclick="confirmAddToOrder()">+ Agregar</button>
     </div>
   </div>
 </div>
@@ -561,11 +577,28 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.7);cursor:
     <div class="pay-summary-total-row">
       <span>Total</span><span id="pay-summary-total">$0.00</span>
     </div>
-    <div class="pay-method-btns">
-      <button class="pay-btn cash"    onclick="finalizePayment('cash')">💵 Efectivo</button>
+    <!-- Campo de efectivo recibido -->
+    <div id="cash-change-section" style="display:none;margin-top:14px;background:var(--caramel-pale);border-radius:10px;padding:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:10px;">Efectivo</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <label style="font-size:13px;font-weight:600;white-space:nowrap">Recibido $</label>
+        <input type="number" id="cash-received-input" min="0" step="1" placeholder="0"
+          style="flex:1;padding:9px 12px;border-radius:8px;border:1.5px solid var(--caramel);font-size:16px;font-weight:700;font-family:'DM Sans',sans-serif;outline:none;color:var(--text-main);"
+          oninput="calcCashChange()">
+      </div>
+      <div id="cash-change-display" style="font-size:15px;font-weight:700;color:var(--espresso);display:none;">
+        Cambio: <span id="cash-change-amount" style="color:var(--success);">$0.00</span>
+      </div>
+      <button id="confirm-cash-btn" onclick="finalizePayment('cash')"
+        style="margin-top:12px;width:100%;padding:11px;border-radius:8px;border:none;background:var(--success);color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">
+        ✅ Confirmar pago en efectivo
+      </button>
+    </div>
+    <div class="pay-method-btns" id="pay-method-btns">
+      <button class="pay-btn cash"    onclick="chooseCashPayment()">💵 Efectivo</button>
       <button class="pay-btn digital" onclick="finalizePayment('digital')">💳 Digital</button>
     </div>
-    <button class="btn-cancel" style="width:100%" onclick="document.getElementById('payModal').classList.remove('open')">Cancelar</button>
+    <button class="btn-cancel" style="width:100%" onclick="document.getElementById('payModal').classList.remove('open');document.getElementById('cash-change-section').style.display='none';">Cancelar</button>
   </div>
 </div>
 
@@ -591,6 +624,53 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.7);cursor:
   </div>
 </div>
 
+<!-- ── MODAL AGREGAR PRODUCTO A MESA ── -->
+<div class="modal-overlay" id="mesaAddModal">
+  <div class="modal" style="max-width:460px;padding:0;display:flex;flex-direction:column;max-height:82vh;">
+    <div style="padding:20px 22px 14px;border-bottom:1px solid var(--border);">
+      <div class="modal-title" id="mesa-add-title">➕ Agregar a Mesa</div>
+      <input type="text" id="mesa-add-search" placeholder="🔍 Buscar producto..."
+        oninput="renderMesaProductList()"
+        style="width:100%;margin-top:12px;padding:9px 13px;border-radius:8px;border:1.5px solid var(--caramel);background:white;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;">
+    </div>
+    <div id="mesa-add-product-list" style="padding:12px 18px;overflow-y:auto;flex:1;"></div>
+    <div style="padding:12px 18px;border-top:1px solid var(--border);">
+      <button class="btn-cancel" style="width:100%" onclick="document.getElementById('mesaAddModal').classList.remove('open')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL COBRAR MESA ── -->
+<div class="modal-overlay" id="mesaCobrarModal">
+  <div class="modal" style="max-width:520px;padding:0;display:flex;flex-direction:column;max-height:90vh;">
+    <div style="padding:20px 22px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <div class="modal-title" id="mesa-cobrar-title">💰 Cobrar Mesa</div>
+      <div class="modal-subtitle" id="mesa-cobrar-subtitle"></div>
+    </div>
+
+    <!-- Selector modo: Unificado vs Separado -->
+    <div style="padding:14px 22px;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <div style="display:flex;gap:8px;">
+        <button id="cobrar-modo-unificado" onclick="setCobrarModo('unificado')"
+          style="flex:1;padding:10px;border-radius:var(--radius-sm);border:2px solid var(--caramel);background:var(--caramel);color:white;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.18s;">
+          💳 Pago único
+        </button>
+        <button id="cobrar-modo-separado" onclick="setCobrarModo('separado')"
+          style="flex:1;padding:10px;border-radius:var(--radius-sm);border:2px solid var(--caramel);background:white;color:var(--caramel);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.18s;">
+          👥 Separar cuentas
+        </button>
+      </div>
+    </div>
+
+    <!-- Contenido dinámico -->
+    <div id="mesa-cobrar-body" style="flex:1;overflow-y:auto;padding:16px 22px;"></div>
+
+    <div style="padding:12px 22px;border-top:1px solid var(--border);flex-shrink:0;">
+      <button class="btn-cancel" style="width:100%" onclick="document.getElementById('mesaCobrarModal').classList.remove('open')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── BARISTA SCREEN ── -->
 <div class="screen" id="screen-barista">
   <div id="sound-activate-bar" style="background:#2C1A0E;color:#FAF7F2;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
@@ -608,13 +688,15 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.7);cursor:
 
 <!-- ── VENTAS / STATS SCREEN ── -->
 <div class="screen" id="screen-stats">
-  <div id="cut-banner" class="cut-banner" style="display:none"></div>
   <div class="stats-layout">
     <div class="stats-sidebar">
       <div class="sidebar-section-title">Reportes</div>
       <button class="sidebar-btn active"  onclick="showStatSection('resumen',this)">📈 Resumen</button>
       <button class="sidebar-btn"         onclick="showStatSection('historial',this)">🧾 Historial</button>
       <button class="sidebar-btn"         onclick="showStatSection('productos',this)">🏆 Top productos</button>
+
+      <div class="sidebar-section-title">Cortes del día</div>
+      <div id="cut-banner"></div>
 
       <div class="sidebar-section-title">Período</div>
       <button class="sidebar-btn period-btn active-period" onclick="filterPeriod('hoy',this)">Hoy</button>
@@ -635,7 +717,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.7);cursor:
 
       <div class="sidebar-section-title">Exportar</div>
       <button class="sidebar-btn" onclick="exportExcel()" style="color:#7FD47F">📊 Excel</button>
-      <button class="sidebar-btn" onclick="exportPDF()"   style="color:#F4A86A">📄 PDF</button>
+      <button class="sidebar-btn" onclick="exportPDF()"   style="color:#F4A86A">📄 PDF general</button>
+      <button class="sidebar-btn" onclick="exportPDFCortes()" style="color:#FFD97D">✂️ PDF cortes del día</button>
 
       <div class="sidebar-section-title">Sesión</div>
       <button class="sidebar-btn" onclick="logout()" style="color:#f08080">🔒 Cerrar sesión</button>
@@ -674,7 +757,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.7);cursor:
             <thead>
               <tr>
                 <th><input type="checkbox" id="select-all-sales" onchange="toggleAllSales(this.checked)" style="cursor:pointer"></th>
-                <th>#</th><th>Hora</th><th>Items</th><th>Tipo</th><th>Pago</th><th>Total</th>
+                <th>#</th><th>Hora</th><th>Items</th><th>Tipo</th><th>Pago</th><th>Total</th><th>👑 Dueño</th>
               </tr>
             </thead>
             <tbody id="sales-tbody"></tbody>
@@ -754,7 +837,7 @@ function logout() {
 // ══════════════════════════════════════════════════════════════
 // DATOS DEL MENÚ
 // ══════════════════════════════════════════════════════════════
-const CATEGORIES = ['Todos','Espresso','Con leche','Bebidas heladas','Cold Brew','Matcha','Sin cafeína','Panadería'];
+const CATEGORIES = ['Todos','Espresso','Con leche','Bebidas heladas','Cold Brew','Matcha','Sin cafeína','Panadería','Agua','Combos'];
 
 // Bebidas que SÍ pueden cambiar tipo de leche
 const CAN_CHANGE_MILK = new Set([
@@ -764,22 +847,31 @@ const CAN_CHANGE_MILK = new Set([
   'Iced Chai Latte','Frappé Clásico','Frappé Mocha','Frappé Caramelo',
   'Matcha Orgánico','Matcha Latte','Iced Matcha Latte',
   'Iced Matcha Strawberry Foam','Iced Matcha Pistachio Foam','Matcha Ceremonial',
+  'Iced Matcha Coconut Foam','Combo Iced Latte',
 ]);
 
 // Bebidas que SÍ pueden agregar sabor extra
 const CAN_CHANGE_FLAVOR = new Set([
   'Latte','Cappuccino','Shakerato Cold Foam',
-  'Iced Latte','Frappé Clásico',
+  'Iced Latte','Frappé Clásico','Combo Iced Latte',
 ]);
 
 const MILK_OPTIONS = ['Entera (incluida)','Deslactosada (+$3)','Light (+$5)','Almendra (+$8)'];
 const FLAVORS      = ['Sin sabor extra','Vainilla (+$10)','Caramelo (+$10)','Avellana (+$10)','Canela (+$10)','Menta (+$10)','Crema Irlandesa (+$10)','Amareto (+$10)'];
 const TEMP_OPTIONS = ['Caliente','Frío'];
 
+const CAN_CHANGE_TEMP = new Set([
+  'Mocha','Mocha Blanco','Mocha Menta','Red Velvet Latte',
+  'Matcha Orgánico','Matcha Latte','Iced Matcha Latte',
+  'Iced Matcha Strawberry Foam','Iced Matcha Pistachio Foam','Matcha Ceremonial',
+  'Iced Coconut Matcha Foam','Blue Matcha Lavanda','Iced Blue Matcha Lavanda',
+  'Dirty Chai','Americano','Combo Americano',
+]);
+
 function buildOpts(name) {
   const o = {};
-  o.temp = TEMP_OPTIONS;
-  if(CAN_CHANGE_MILK.has(name)) o.milk = MILK_OPTIONS;
+  if(CAN_CHANGE_TEMP.has(name))   o.temp   = TEMP_OPTIONS;
+  if(CAN_CHANGE_MILK.has(name))   o.milk   = MILK_OPTIONS;
   if(CAN_CHANGE_FLAVOR.has(name)) o.flavor = FLAVORS;
   return o;
 }
@@ -789,6 +881,7 @@ const MENU_SECTIONS = [
   { id:'espresso', label:'Espresso', icon:'☕', items:[
     {id:1, name:'Espresso',   price:35, emoji:'☕'},
     {id:2, name:'Long Black', price:45, emoji:'☕'},
+    {id:55, name:'Americano', price:45, emoji:'☕'},
   ]},
   { id:'con-leche', label:'Con leche', icon:'🥛', items:[
     {id:3,  name:'Cortado',           price:45, emoji:'🥛'},
@@ -827,6 +920,7 @@ const MENU_SECTIONS = [
     {id:30, name:'Iced Matcha Strawberry Foam', price:90, emoji:'🍓', note:'Monk Fruit'},
     {id:31, name:'Iced Matcha Pistachio Foam',  price:90, emoji:'🌿', note:'Monk Fruit'},
     {id:32, name:'Matcha Ceremonial',           price:75, emoji:'🍵'},
+    {id:50, name:'Iced Matcha Coconut Foam',    price:90, emoji:'🥥', note:'Monk Fruit'},
   ]},
   { id:'sin-cafeina', label:'Sin cafeína', icon:'🌸', items:[
     {id:33, name:'Blue Matcha Lavanda',      price:85, emoji:'💜'},
@@ -837,6 +931,14 @@ const MENU_SECTIONS = [
   { id:'panaderia', label:'Panadería', icon:'🥐', items:[
     {id:37, name:'Pan Almendrado', price:50, emoji:'🥐'},
     {id:38, name:'Pan Normal',     price:45, emoji:'🍞'},
+    {id:51, name:'Galletas',       price:20, emoji:'🍪'},
+  ]},
+  { id:'agua', label:'Agua', icon:'💧', items:[
+    {id:52, name:'Agua (500ml)',   price:10, emoji:'💧'},
+  ]},
+  { id:'combos', label:'Combos', icon:'🎁', items:[
+    {id:53, name:'Combo Iced Latte',   price:85, emoji:'🎁', note:'Iced Latte + Pan Normal'},
+    {id:54, name:'Combo Americano',    price:65, emoji:'☕', note:'Americano + Pan Normal'},
   ]},
 ];
 
@@ -896,6 +998,7 @@ function loadMenuFromFirebase(data) {
     }
   });
   buildMenu();
+  loadPhotosFromLocalStorage();
   if(document.getElementById('screen-menu-editor')?.classList.contains('active'))
     renderMenuEditor();
 }
@@ -918,9 +1021,99 @@ let customDateFrom  = null;
 let customDateTo    = null;
 let hourlyChart, paymentChart, productsChart;
 
+// ══════════════════════════════════════════════════════════════
+// SISTEMA DE DUEÑOS
+// ══════════════════════════════════════════════════════════════
+const DUENOS = ['hector','hector eli','alison','joseph','camila','danny','liz','danielita'];
+
+// Estado de dueños guardado en Firebase por fecha
+// Estructura en Firebase: duenosStatus/YYYY-MM-DD/{ hector: 'gratis'|'50%', ... }
+// 'gratis' = ya usó la bebida gratis hoy, '50%' = sigue con 50%
+// Si no existe o es de otro día → tiene derecho a bebida gratis
+let duenoEstadoHoy = {}; // cargado desde Firebase
+let _duenoFechaHoy = new Date().toLocaleDateString('es-MX',{year:'numeric',month:'2-digit',day:'2-digit'}).split('/').reverse().join('-');
+
+// Carga el estado de dueños del día desde Firebase
+function cargarEstadoDuenosFirebase() {
+  if(!window._fbReady) return;
+  window._ref(window._db, 'duenosStatus/' + _duenoFechaHoy);
+  // El listener se registra una vez al init
+}
+
+// Inicializar listener de dueños
+function initDuenosListener() {
+  if(!window._fbReady) { setTimeout(initDuenosListener, 500); return; }
+  const hoy = new Date().toLocaleDateString('es-MX',{year:'numeric',month:'2-digit',day:'2-digit'}).split('/').reverse().join('-');
+  _duenoFechaHoy = hoy;
+  const { onValue, ref } = window._onValueRef || {};
+  // Usamos el ref/onValue globales que ya están en el módulo Firebase
+  // Accedemos via window._db y window._ref (ya expuestos)
+  // Para el listener usamos la función global onValue que inyectamos abajo
+  window._duenosRef = window._ref(window._db, 'duenosStatus/' + hoy);
+  window._duenosUnsubscribe && window._duenosUnsubscribe();
+}
+
+function isDueno(nombre) {
+  return DUENOS.includes(nombre.trim().toLowerCase());
+}
+
+function getDuenoKey(nombre) {
+  return nombre.trim().toLowerCase();
+}
+
+function getTodayKey() {
+  return new Date().toLocaleDateString('es-MX',{year:'numeric',month:'2-digit',day:'2-digit'}).split('/').reverse().join('-');
+}
+
+function getDuenoStatus(nombre) {
+  const key = getDuenoKey(nombre);
+  // Siempre leer desde window.duenoEstadoHoy que se actualiza en tiempo real por Firebase
+  const estadoActual = window.duenoEstadoHoy || duenoEstadoHoy;
+  return estadoActual[key] || null;
+}
+
+// Devuelve el precio real a cobrar según estado del dueño
+function calcPrecioDueno(precioBase, nombre) {
+  const status = getDuenoStatus(nombre);
+  if (!status) {
+    // Primera bebida del día: gratis
+    return 0;
+  } else {
+    // Siguientes ese día: 50% descuento
+    return precioBase * 0.5;
+  }
+}
+
+// Actualiza el estado del dueño en Firebase tras procesar un item
+function actualizarEstadoDueno(nombre) {
+  const key = getDuenoKey(nombre);
+  const hoy = getTodayKey();
+  const estadoActual = window.duenoEstadoHoy || duenoEstadoHoy;
+  if (!estadoActual[key]) {
+    duenoEstadoHoy[key] = 'gratis';
+    window.duenoEstadoHoy[key] = 'gratis';
+  } else {
+    duenoEstadoHoy[key] = '50%';
+    window.duenoEstadoHoy[key] = '50%';
+  }
+  // Guardar en Firebase para que persista durante el día en todos los dispositivos
+  if(window._fbReady) {
+    const updateObj = {};
+    updateObj[key] = duenoEstadoHoy[key];
+    window._update(window._ref(window._db, 'duenosStatus/' + hoy), updateObj);
+  }
+}
+
+// Retorna el label del beneficio aplicado
+function labelBeneficioDueno(nombre) {
+  const status = getDuenoStatus(nombre);
+  if (!status) return '🎁 Gratis (dueño)';
+  return '50% dueño';
+}
+
 const CUT_SCHEDULES = [
   { label:'Corte mañana', endHour:14, endMin:30 },
-  { label:'Corte tarde',  endHour:22, endMin:0  },
+  { label:'Corte tarde',  endHour:21, endMin:0  },
 ];
 
 // ══════════════════════════════════════════════════════════════
@@ -1033,8 +1226,16 @@ function confirmCustomerName(skip) {
   // Actualizar etiqueta en panel
   const lbl = document.getElementById('order-customer-label');
   if(orderCustomerName) {
-    lbl.textContent = '👤 ' + orderCustomerName;
-    lbl.style.display = 'block';
+    if(isDueno(orderCustomerName)) {
+      const status = getDuenoStatus(orderCustomerName);
+      const tag = status ? ' · 50% dueño' : ' · 🎁 1ª bebida gratis';
+      lbl.innerHTML = '👑 ' + orderCustomerName + '<span style="color:var(--caramel);font-size:11px;margin-left:5px">' + tag + '</span>';
+      lbl.style.display = 'block';
+      showToast('👑 ' + orderCustomerName + ' — ' + (status ? 'bebidas al 50%' : '¡Primera bebida gratis!'));
+    } else {
+      lbl.textContent = '👤 ' + orderCustomerName;
+      lbl.style.display = 'block';
+    }
   } else {
     lbl.style.display = 'none';
   }
@@ -1091,12 +1292,50 @@ function changeModalQty(d) {
 
 function closeModal() {
   document.getElementById('customModal').classList.remove('open');
+  const btnAdd = document.getElementById('btn-add');
+  if(btnAdd) btnAdd.textContent = '+ Agregar';
   pendingModal = null;
+}
+
+function removeOrderItem(id){ orderItems=orderItems.filter(i=>i.id!==id); renderOrderPanel(); }
+
+function editOrderItem(id) {
+  const existing = orderItems.find(i=>i.id===id);
+  if(!existing) return;
+  const menuItem = menuItems.find(m=>m.name===existing.name);
+  if(!menuItem){ showToast('No se encontró el producto en el menú'); return; }
+  const opts = menuItem.options||{};
+  const secs = [];
+  if(opts.temp)   secs.push({key:'temp',   label:'Temperatura',   options:opts.temp});
+  if(opts.milk)   secs.push({key:'milk',   label:'Tipo de leche', options:opts.milk});
+  if(opts.flavor) secs.push({key:'flavor', label:'Sabor extra',   options:opts.flavor});
+  if(!secs.length){ showToast('Este producto no tiene opciones para editar'); return; }
+
+  pendingModal = { item:menuItem, selections:{}, qty:1, editingId:id };
+  // Pre-seleccionar valores actuales
+  if(opts.temp)   pendingModal.selections.temp   = existing.mods.find(m=>TEMP_OPTIONS.includes(m))   || opts.temp[0];
+  if(opts.milk)   pendingModal.selections.milk   = opts.milk.find(mo=>existing.mods.includes(mo.replace(/ \(\+\$\d+\)/,''))) || opts.milk[0];
+  if(opts.flavor) pendingModal.selections.flavor = opts.flavor.find(f=>existing.mods.includes(f.replace(/ \(\+\$\d+\)/,''))) || opts.flavor[0];
+
+  document.getElementById('modal-item-name').textContent  = menuItem.emoji+' '+menuItem.name;
+  document.getElementById('modal-item-price').textContent = '$'+menuItem.price.toFixed(2);
+
+  let html = '';
+  secs.forEach(s => {
+    html += `<div class="modal-section"><div class="modal-section-title">${s.label}</div><div class="option-chips">
+      ${s.options.map(opt=>
+        `<div class="${pendingModal.selections[s.key]===opt||pendingModal.selections[s.key]===opt.replace(/ \(\+\$\d+\)/,'')?'chip selected':'chip'}" data-key="${s.key}" data-val="${opt.replace(/"/g,'&quot;')}" onclick="selectChip(this)">${opt}</div>`
+      ).join('')}
+    </div></div>`;
+  });
+  document.getElementById('modal-options').innerHTML = html;
+  document.getElementById('btn-add').textContent = '✓ Guardar cambios';
+  document.getElementById('customModal').classList.add('open');
 }
 
 function confirmAddToOrder() {
   if(!pendingModal) return;
-  const {item,selections,qty} = pendingModal;
+  const {item, selections, qty, editingId, addToMesaDirect} = pendingModal;
   let price = item.price;
   Object.values(selections).forEach(v=>{ const m=String(v).match(/\+\$(\d+)/); if(m) price+=parseInt(m[1]); });
   const mods = [];
@@ -1105,11 +1344,41 @@ function confirmAddToOrder() {
     mods.push(selections.milk.replace(/ \(\+\$\d+\)/,''));
   if(selections.flavor && selections.flavor!=='Sin sabor extra')
     mods.push(selections.flavor.replace(/ \(\+\$\d+\)/,''));
-  for(let i=0;i<qty;i++)
-    orderItems.push({id:Date.now()+i, itemId:item.id, name:item.name, emoji:item.emoji, price, mods:[...mods]});
-  closeModal();
-  renderOrderPanel();
-  showToast(`${item.emoji} ${item.name}${qty>1?' ×'+qty:''} agregado`);
+
+  // Aplicar beneficio de dueño (solo en modo para llevar/normal, no edición)
+  let duenoLabel = null;
+  if(!editingId && !addToMesaDirect && orderCustomerName && isDueno(orderCustomerName)) {
+    duenoLabel = labelBeneficioDueno(orderCustomerName);
+    const precioFinal = calcPrecioDueno(price, orderCustomerName);
+    actualizarEstadoDueno(orderCustomerName);
+    // Actualizar el label del dueño en el panel
+    const lbl = document.getElementById('order-customer-label');
+    if(lbl) {
+      const status = getDuenoStatus(orderCustomerName);
+      const tag = status === 'gratis' ? ' · 50% dueño (próximas)' : ' · 50% dueño';
+      lbl.innerHTML = '👑 ' + orderCustomerName + '<span style="color:var(--caramel);font-size:11px;margin-left:5px">' + tag + '</span>';
+    }
+    price = precioFinal;
+    if(duenoLabel === '🎁 Gratis (dueño)') showToast('🎁 ¡Bebida gratis para ' + orderCustomerName + '!');
+    else showToast('💰 50% descuento aplicado para ' + orderCustomerName);
+  }
+
+  if(editingId) {
+    const idx = orderItems.findIndex(i=>i.id===editingId);
+    if(idx!==-1) orderItems[idx] = {...orderItems[idx], price, mods:[...mods]};
+    document.getElementById('btn-add').textContent = '+ Agregar';
+    closeModal(); renderOrderPanel();
+    showToast(`✏️ ${item.name} actualizado`);
+  } else if(addToMesaDirect) {
+    document.getElementById('btn-add').textContent = '+ Agregar';
+    closeModal();
+    _commitAddToMesa({id:item.id, name:item.name, emoji:item.emoji, price}, mods, addToMesaDirect);
+  } else {
+    for(let i=0;i<qty;i++)
+      orderItems.push({id:Date.now()+i, itemId:item.id, name:item.name, emoji:item.emoji, price, mods:[...mods], duenoLabel: duenoLabel});
+    closeModal(); renderOrderPanel();
+    if(!duenoLabel) showToast(`${item.emoji} ${item.name}${qty>1?' ×'+qty:''} agregado`);
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1136,6 +1405,8 @@ function renderOrderPanel() {
         <div class="order-item-info">
           <div class="order-item-name">${i.name}</div>
           ${i.mods.length?`<div class="order-item-mods">${i.mods.join(' · ')}</div>`:''}
+          ${i.duenoLabel?`<div style="font-size:10px;font-weight:700;color:var(--caramel);margin-top:2px">👑 ${i.duenoLabel}</div>`:''}
+          <button class="edit-item-btn" onclick="editOrderItem(${i.id})">✏️ Editar</button>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
           <div class="order-item-price">$${i.price.toFixed(2)}</div>
@@ -1159,6 +1430,16 @@ function setOrderType(type){
 
 function clearOrder(){
   if(!confirm('¿Cancelar esta orden?')) return;
+  // Si era un dueño, restablecer su estado para no quitarle la bebida gratis
+  if(orderCustomerName && isDueno(orderCustomerName)) {
+    const key = getDuenoKey(orderCustomerName);
+    // Solo revertir si la bebida gratis fue la que se cancela y no hay más items pagados
+    const hadFree = orderItems.some(i=>i.duenoLabel && i.duenoLabel.includes('Gratis'));
+    if(hadFree) {
+      // Revertir: la bebida gratis no fue consumida
+      delete duenoSesion[key];
+    }
+  }
   orderItems=[]; orderCustomerName=''; currentMesa=null;
   document.getElementById('order-notes').value='';
   document.getElementById('order-customer-label').style.display='none';
@@ -1171,6 +1452,8 @@ function clearOrder(){
 // ══════════════════════════════════════════════════════════════
 // RESUMEN DE PAGO
 // ══════════════════════════════════════════════════════════════
+let _pendingOrderForBarista = null; // guardamos la orden antes del cobro
+
 function openPaySummary() {
   if(!orderItems.length){ showToast('Agrega artículos primero'); return; }
   if(orderType==='aqui' && !currentMesa){ showToast('Selecciona una mesa primero'); openMesaSelector(); return; }
@@ -1182,15 +1465,88 @@ function openPaySummary() {
       <div>
         <div>${i.emoji} ${i.name}</div>
         ${i.mods.length?`<div class="pay-summary-mods">${i.mods.join(' · ')}</div>`:''}
+        ${i.duenoLabel?`<div style="font-size:10px;font-weight:700;color:var(--caramel)">👑 ${i.duenoLabel}</div>`:''}
       </div>
       <div style="font-weight:700;white-space:nowrap;margin-left:12px">$${i.price.toFixed(2)}</div>
     </div>`).join('');
   document.getElementById('pay-summary-total').textContent = '$'+total.toFixed(2);
+
+  // Ocultar sección de cambio
+  document.getElementById('cash-change-section').style.display = 'none';
+
+  // Botones según tipo de orden
+  const methodBtns = document.getElementById('pay-method-btns');
+  if(orderType === 'aqui') {
+    methodBtns.innerHTML = `<button class="pay-btn" style="grid-column:1/-1;background:var(--sage);color:white;font-size:15px;" onclick="finalizePayment('mesa')">🪑 Enviar a Mesa ${currentMesa} — cobrar después</button>`;
+  } else {
+    methodBtns.innerHTML = `
+      <button class="pay-btn cash"    onclick="chooseCashPayment()">💵 Efectivo</button>
+      <button class="pay-btn digital" onclick="finalizePayment('digital')">💳 Digital</button>`;
+  }
+
+  // Asignar número de orden y ENVIAR AL BARISTA AHORA
+  const now = new Date();
+  const id  = window.orderNumber;
+  const mesa = orderType==='aqui' ? (currentMesa||null) : null;
+  const _isDuenoOrder = orderCustomerName && isDueno(orderCustomerName);
+  _pendingOrderForBarista = {
+    id, items:[...orderItems], type:orderType, paymentMethod:'pending',
+    total, notes:document.getElementById('order-notes').value,
+    customerName: orderCustomerName || '',
+    mesa: mesa,
+    timestamp:now.toISOString(),
+    timeStr:now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
+    status:'pending',
+    esDueno: _isDuenoOrder ? true : false,
+    duenoNombre: _isDuenoOrder ? orderCustomerName : null,
+    duenoItems: _isDuenoOrder ? orderItems.filter(i=>i.duenoLabel).map(i=>({name:i.name, label:i.duenoLabel})) : []
+  };
+
+  // Enviar al barista ahora
+  if(window._fbReady) {
+    window._set(window._ref(window._db, `pendingOrders/${id}`), _pendingOrderForBarista);
+  } else {
+    window.pendingOrders.push({..._pendingOrderForBarista});
+    renderBaristaScreen?.();
+  }
+
   document.getElementById('payModal').classList.add('open');
+}
+
+function chooseCashPayment() {
+  // Mostrar sección de efectivo recibido
+  const section = document.getElementById('cash-change-section');
+  section.style.display = 'block';
+  const input = document.getElementById('cash-received-input');
+  input.value = '';
+  document.getElementById('cash-change-display').style.display = 'none';
+  input.focus();
+}
+
+function calcCashChange() {
+  const total = orderItems.reduce((s,i)=>s+i.price,0);
+  const received = parseFloat(document.getElementById('cash-received-input').value)||0;
+  const changeEl = document.getElementById('cash-change-display');
+  const amountEl = document.getElementById('cash-change-amount');
+  if(received >= total) {
+    const cambio = received - total;
+    amountEl.textContent = '$'+cambio.toFixed(2);
+    amountEl.style.color = cambio > 0 ? 'var(--success)' : 'var(--espresso)';
+    changeEl.style.display = 'block';
+    // Mostrar botón confirmar si está oculto
+    document.getElementById('confirm-cash-btn') && (document.getElementById('confirm-cash-btn').style.display='block');
+  } else if(received > 0) {
+    amountEl.textContent = 'Insuficiente';
+    amountEl.style.color = 'var(--danger)';
+    changeEl.style.display = 'block';
+  } else {
+    changeEl.style.display = 'none';
+  }
 }
 
 function finalizePayment(method) {
   document.getElementById('payModal').classList.remove('open');
+  document.getElementById('cash-change-section').style.display = 'none';
   processPayment(method);
 }
 
@@ -1198,51 +1554,54 @@ function finalizePayment(method) {
 // COBRO
 // ══════════════════════════════════════════════════════════════
 function processPayment(method) {
-  if(!orderItems.length){ showToast('Agrega artículos primero'); return; }
-  const total = orderItems.reduce((s,i)=>s+i.price,0);
-  const now   = new Date();
-  const id    = window.orderNumber;
-  const mesa  = orderType==='aqui' ? (currentMesa||null) : null;
-  const order = {
-    id, items:[...orderItems], type:orderType, paymentMethod:method,
-    total, notes:document.getElementById('order-notes').value,
-    customerName: orderCustomerName || '',
-    mesa: mesa,
-    timestamp:now.toISOString(),
-    timeStr:now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
-    status:'pending'
-  };
+  if(!orderItems.length && !_pendingOrderForBarista){ showToast('Agrega artículos primero'); return; }
 
-  if(window._fbReady) {
-    window._set(window._ref(window._db, `pendingOrders/${id}`), order);
-    window._set(window._ref(window._db, `salesHistory/${id}`),  order);
-    window._set(window._ref(window._db, 'orderNumber'), id+1);
+  const order = _pendingOrderForBarista || {};
+  const id    = order.id || window.orderNumber;
+  const total = order.total || orderItems.reduce((s,i)=>s+i.price,0);
+  const mesa  = order.mesa || null;
+  const finalOrder = {...order, paymentMethod: method, status:'pending'};
+
+  if(order.type === 'aqui' && mesa) {
+    // PARA AQUÍ: solo guardar en barista (ya hecho en openPaySummary) y agregar a mesa.
+    // NO registrar en salesHistory — eso se hace cuando se cobra en el panel de mesas.
+    if(window._fbReady) {
+      window._update(window._ref(window._db, `pendingOrders/${id}`), {paymentMethod: method});
+      window._set(window._ref(window._db, 'orderNumber'), id+1);
+    } else {
+      const idx = window.pendingOrders.findIndex(o=>o.id===id);
+      if(idx>-1) window.pendingOrders[idx].paymentMethod = method;
+      window.orderNumber = id+1;
+      document.getElementById('order-number').textContent = String(id+1).padStart(3,'0');
+    }
+    addOrderToMesa(mesa, finalOrder);
+    showToast(`🪑 Orden #${String(id).padStart(3,'0')} enviada a Mesa ${mesa} — $${total.toFixed(2)}`);
   } else {
-    window.pendingOrders.push(order);
-    window.salesHistory.push(order);
-    window.orderNumber = id+1;
-    document.getElementById('order-number').textContent = String(id+1).padStart(3,'0');
-  }
-
-  // Si es para aquí, agregar a la mesa
-  if(orderType==='aqui' && currentMesa) {
-    addOrderToMesa(currentMesa, order);
+    // PARA LLEVAR: registrar en barista + ventas inmediatamente
+    if(window._fbReady) {
+      window._update(window._ref(window._db, `pendingOrders/${id}`), {paymentMethod: method});
+      window._set(window._ref(window._db, `salesHistory/${id}`), finalOrder);
+      window._set(window._ref(window._db, 'orderNumber'), id+1);
+    } else {
+      const idx = window.pendingOrders.findIndex(o=>o.id===id);
+      if(idx>-1) window.pendingOrders[idx].paymentMethod = method;
+      window.salesHistory.push(finalOrder);
+      window.orderNumber = id+1;
+      document.getElementById('order-number').textContent = String(id+1).padStart(3,'0');
+    }
+    showToast(`✅ Orden #${String(id).padStart(3,'0')} enviada — $${total.toFixed(2)}`);
   }
 
   window.orderNumber = id+1;
   document.getElementById('order-number').textContent = String(id+1).padStart(3,'0');
-  showToast(`✅ Orden #${String(id).padStart(3,'0')} enviada — $${total.toFixed(2)}`);
+  _pendingOrderForBarista = null;
   orderItems=[]; orderCustomerName=''; currentMesa=null;
   document.getElementById('order-notes').value='';
   document.getElementById('order-customer-label').style.display='none';
-  // Resetear tipo a llevar para evitar abrir mesaModal automáticamente
   orderType='llevar';
   document.getElementById('btn-aqui').classList.remove('active');
   document.getElementById('btn-llevar').classList.add('active');
   renderOrderPanel();
-  const banner = document.getElementById('new-order-banner');
-  banner.classList.add('visible');
-  setTimeout(()=>banner.classList.remove('visible'),3000);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1331,13 +1690,17 @@ window.renderMesasScreen = function renderMesasScreen() {
         ${itemsHtml}
         ${items.length ? `<div class="mesa-subtotal"><span>Total</span><span>$${total.toFixed(2)}</span></div>` : ''}
       </div>
-      ${occupied && !paid ? `<div class="mesa-card-footer">
-        <button class="mesa-pay-btn mesa-pay-cash"    onclick="payMesa(${m},'cash')">💵 Efectivo</button>
-        <button class="mesa-pay-btn mesa-pay-digital" onclick="payMesa(${m},'digital')">💳 Digital</button>
-        <button class="mesa-free-btn" onclick="clearMesa(${m})" title="Cancelar mesa">🗑</button>
+      ${occupied && !paid ? `<div class="mesa-card-footer" style="flex-direction:column;gap:6px">
+        <button class="mesa-add-btn" onclick="openMesaAddProduct(${m})">＋ Agregar producto a mesa</button>
+        <div style="display:flex;gap:6px;width:100%">
+          <button class="mesa-pay-btn" style="background:var(--caramel);color:white;flex:1" onclick="openMesaCobrarModal(${m})">💰 Cobrar</button>
+          <button class="mesa-free-btn" onclick="clearMesa(${m})" title="Cancelar mesa">🗑</button>
+        </div>
       </div>` : occupied && paid ? `<div class="mesa-card-footer">
         <button class="mesa-free-btn" style="flex:1" onclick="clearMesa(${m})">✓ Liberar mesa</button>
-      </div>` : ''}
+      </div>` : `<div class="mesa-card-footer">
+        <button class="mesa-add-btn" style="width:100%" onclick="openMesaAddProduct(${m})">＋ Agregar primer producto</button>
+      </div>`}
     </div>`;
   }
   grid.innerHTML = html;
@@ -1349,7 +1712,43 @@ function payMesa(mesaNum, method) {
   const items= Array.isArray(st.items) ? st.items : Object.values(st.items||{});
   if(!items.length){ showToast('Mesa sin consumo'); return; }
   const total = items.reduce((s,i)=>s+(i.price||0),0);
-  if(!confirm(`¿Cobrar Mesa ${mesaNum}?\nTotal: $${total.toFixed(2)}\nMétodo: ${method==='cash'?'Efectivo':'Digital'}`)) return;
+
+  if(method==='cash') {
+    const received = parseFloat(prompt(`Mesa ${mesaNum} — Total: $${total.toFixed(2)}\n\n¿Cuánto recibiste?`));
+    if(isNaN(received)) return;
+    if(received < total) { alert('Monto insuficiente'); return; }
+    const cambio = received - total;
+    if(cambio > 0) alert(`Cambio a regresar: $${cambio.toFixed(2)}`);
+  } else {
+    if(!confirm(`¿Cobrar Mesa ${mesaNum}?\nTotal: $${total.toFixed(2)}\nMétodo: Digital`)) return;
+  }
+
+  // Registrar en ventas
+  const now = new Date();
+  const orderId = window.orderNumber;
+  const saleOrder = {
+    id: orderId,
+    items: items,
+    type: 'aqui',
+    paymentMethod: method,
+    total: total,
+    notes: '',
+    customerName: '',
+    mesa: mesaNum,
+    timestamp: now.toISOString(),
+    timeStr: now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
+    status: 'done'
+  };
+  if(window._fbReady) {
+    window._set(window._ref(window._db, `salesHistory/${orderId}`), saleOrder);
+    window._set(window._ref(window._db, 'orderNumber'), orderId+1);
+  } else {
+    window.salesHistory.push(saleOrder);
+    window.orderNumber = orderId+1;
+  }
+  window.orderNumber = orderId+1;
+  document.getElementById('order-number').textContent = String(orderId+1).padStart(3,'0');
+
   window.mesasState[key].paid = true;
   saveMesasToFirebase();
   window.renderMesasScreen();
@@ -1362,6 +1761,417 @@ function clearMesa(mesaNum) {
   saveMesasToFirebase();
   window.renderMesasScreen();
   showToast(`🪑 Mesa ${mesaNum} liberada`);
+}
+
+// ══════════════════════════════════════════════════════════════
+// COBRAR MESA — modal unificado / separado
+// ══════════════════════════════════════════════════════════════
+let _cobrarMesaNum   = null;
+let _cobrarModo      = 'unificado'; // 'unificado' | 'separado'
+let _cobrarPersonas  = [];          // [{name, items:[], method:''}]
+
+function openMesaCobrarModal(mesaNum) {
+  const key  = 'mesa' + mesaNum;
+  const st   = window.mesasState[key];
+  const items = Array.isArray(st.items) ? st.items : Object.values(st.items || {});
+  if (!items.length) { showToast('Mesa sin consumo'); return; }
+
+  _cobrarMesaNum  = mesaNum;
+  _cobrarModo     = 'unificado';
+  _cobrarPersonas = [{ name: 'Todos', items: items.map((_,i) => i), method: '' }];
+
+  const total = items.reduce((s, i) => s + (i.price || 0), 0);
+  document.getElementById('mesa-cobrar-title').textContent = `💰 Cobrar Mesa ${mesaNum}`;
+  document.getElementById('mesa-cobrar-subtitle').textContent =
+    `${items.length} producto${items.length !== 1 ? 's' : ''} · Total $${total.toFixed(2)}`;
+
+  setCobrarModo('unificado');
+  document.getElementById('mesaCobrarModal').classList.add('open');
+}
+
+function setCobrarModo(modo) {
+  _cobrarModo = modo;
+  const btnU = document.getElementById('cobrar-modo-unificado');
+  const btnS = document.getElementById('cobrar-modo-separado');
+  btnU.style.background = modo === 'unificado' ? 'var(--caramel)' : 'white';
+  btnU.style.color       = modo === 'unificado' ? 'white' : 'var(--caramel)';
+  btnS.style.background  = modo === 'separado'  ? 'var(--caramel)' : 'white';
+  btnS.style.color        = modo === 'separado'  ? 'white' : 'var(--caramel)';
+
+  if (modo === 'unificado') renderCobrarUnificado();
+  else                       renderCobrarSeparado();
+}
+
+/* ── MODO UNIFICADO ── */
+function renderCobrarUnificado() {
+  const key   = 'mesa' + _cobrarMesaNum;
+  const st    = window.mesasState[key];
+  const items = Array.isArray(st.items) ? st.items : Object.values(st.items || {});
+  const total = items.reduce((s, i) => s + (i.price || 0), 0);
+
+  const body = document.getElementById('mesa-cobrar-body');
+  body.innerHTML = `
+    <div style="background:var(--cream-dark);border-radius:10px;overflow:hidden;margin-bottom:14px;">
+      ${items.map(i => `
+        <div style="display:flex;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--border);font-size:13px;">
+          <span>${i.emoji || '☕'} ${i.name}${i.mods && i.mods.length ? ' <small style="color:var(--text-muted)">('+i.mods.join(', ')+')</small>' : ''}</span>
+          <span style="font-weight:700;margin-left:8px">$${(i.price||0).toFixed(2)}</span>
+        </div>`).join('')}
+      <div style="display:flex;justify-content:space-between;padding:11px 13px;font-size:16px;font-weight:700;color:var(--espresso);">
+        <span>Total</span><span>$${total.toFixed(2)}</span>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:9px;">Método de pago</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      <button class="pay-btn cash" onclick="cobrarUnificado('cash')">💵 Efectivo</button>
+      <button class="pay-btn digital" onclick="cobrarUnificado('digital')">💳 Digital</button>
+    </div>`;
+}
+
+function cobrarUnificado(method) {
+  const key   = 'mesa' + _cobrarMesaNum;
+  const st    = window.mesasState[key];
+  const items = Array.isArray(st.items) ? st.items : Object.values(st.items || {});
+  const total = items.reduce((s, i) => s + (i.price || 0), 0);
+
+  if (method === 'cash') {
+    const received = parseFloat(prompt(`Mesa ${_cobrarMesaNum} — Total: $${total.toFixed(2)}\n\n¿Cuánto recibiste?`));
+    if (isNaN(received)) return;
+    if (received < total) { alert('Monto insuficiente'); return; }
+    const cambio = received - total;
+    if (cambio > 0) alert(`Cambio a regresar: $${cambio.toFixed(2)}`);
+  } else {
+    if (!confirm(`¿Cobrar Mesa ${_cobrarMesaNum}?\nTotal: $${total.toFixed(2)}\nMétodo: Digital`)) return;
+  }
+
+  _registrarVentaMesa(_cobrarMesaNum, items, total, method);
+  window.mesasState[key].paid = true;
+  saveMesasToFirebase();
+  window.renderMesasScreen();
+  document.getElementById('mesaCobrarModal').classList.remove('open');
+  showToast(`✅ Mesa ${_cobrarMesaNum} pagada — $${total.toFixed(2)} (${method === 'cash' ? 'Efectivo' : 'Digital'})`);
+}
+
+/* ── MODO SEPARADO ── */
+function renderCobrarSeparado() {
+  const key   = 'mesa' + _cobrarMesaNum;
+  const st    = window.mesasState[key];
+  const items = Array.isArray(st.items) ? st.items : Object.values(st.items || {});
+
+  // Aseguramos que _cobrarPersonas tenga al menos una persona con todos los ítems sueltos
+  if (_cobrarPersonas.length === 0 || _cobrarPersonas[0].name === 'Todos') {
+    _cobrarPersonas = [{ name: 'Persona 1', items: items.map((_, i) => i), method: '' }];
+  }
+
+  _renderSeparadoUI(items);
+}
+
+function _renderSeparadoUI(items) {
+  const body = document.getElementById('mesa-cobrar-body');
+  // Calcular qué ítems ya están asignados
+  const assigned = new Set(_cobrarPersonas.flatMap(p => p.items));
+  const unassigned = items.map((_, i) => i).filter(i => !assigned.has(i));
+
+  let html = '';
+
+  // Personas
+  _cobrarPersonas.forEach((persona, pi) => {
+    const subtotal = persona.items.reduce((s, idx) => s + (items[idx]?.price || 0), 0);
+    const methodLabel = persona.method === 'cash' ? '💵 Efectivo' : persona.method === 'digital' ? '💳 Digital' : '';
+    html += `
+      <div style="background:white;border:1.5px solid var(--caramel);border-radius:12px;margin-bottom:12px;overflow:hidden;">
+        <div style="padding:10px 14px;background:var(--caramel-pale);display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <input value="${persona.name}"
+            onchange="renameCobrarPersona(${pi}, this.value)"
+            style="font-size:14px;font-weight:700;color:var(--espresso);border:none;background:transparent;outline:none;flex:1;font-family:'DM Sans',sans-serif;">
+          ${_cobrarPersonas.length > 1 ? `<button onclick="removeCobrarPersona(${pi})" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:12px;color:var(--danger);font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">×</button>` : ''}
+        </div>
+        <div style="padding:8px 14px;">
+          ${persona.items.length === 0
+            ? `<div style="font-size:12px;color:var(--text-muted);padding:4px 0;">Sin productos asignados</div>`
+            : persona.items.map(idx => {
+                const it = items[idx];
+                return `<div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:4px 0;gap:6px;">
+                  <span style="flex:1">${it.emoji||'☕'} ${it.name}</span>
+                  <span style="font-weight:700;white-space:nowrap">$${(it.price||0).toFixed(2)}</span>
+                  <button onclick="unassignItemSeparado(${pi},${idx})"
+                    style="width:18px;height:18px;border-radius:50%;border:1px solid var(--border);background:white;cursor:pointer;font-size:11px;color:var(--text-muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;"
+                    title="Quitar">−</button>
+                </div>`;
+              }).join('')}
+          ${subtotal > 0 ? `<div style="font-size:13px;font-weight:700;color:var(--espresso);padding-top:6px;margin-top:4px;border-top:1px solid var(--border);display:flex;justify-content:space-between;"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>` : ''}
+        </div>
+        <div style="padding:8px 14px;border-top:1px solid var(--border);display:flex;gap:6px;align-items:center;">
+          <span style="font-size:11px;color:var(--text-muted);font-weight:600;flex-shrink:0;">Pago:</span>
+          <button onclick="setCobrarPersonaMethod(${pi},'cash')"
+            style="flex:1;padding:6px;border-radius:6px;border:1.5px solid ${persona.method==='cash'?'var(--success)':'var(--border)'};background:${persona.method==='cash'?'#E8F4EA':'white'};font-size:12px;font-weight:700;cursor:pointer;color:${persona.method==='cash'?'var(--success)':'var(--text-muted)'};font-family:'DM Sans',sans-serif;">
+            💵 Efectivo
+          </button>
+          <button onclick="setCobrarPersonaMethod(${pi},'digital')"
+            style="flex:1;padding:6px;border-radius:6px;border:1.5px solid ${persona.method==='digital'?'var(--espresso)':'var(--border)'};background:${persona.method==='digital'?'var(--espresso)':'white'};font-size:12px;font-weight:700;cursor:pointer;color:${persona.method==='digital'?'white':'var(--text-muted)'};font-family:'DM Sans',sans-serif;">
+            💳 Digital
+          </button>
+        </div>
+      </div>`;
+  });
+
+  // Productos sin asignar
+  if (unassigned.length) {
+    html += `<div style="background:var(--cream-dark);border-radius:10px;padding:10px 14px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:8px;">Sin asignar — toca para agregar a una persona</div>
+      ${unassigned.map(idx => {
+        const it = items[idx];
+        return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12px;">
+          <span style="flex:1">${it.emoji||'☕'} ${it.name}</span>
+          <span style="font-weight:700;white-space:nowrap">$${(it.price||0).toFixed(2)}</span>
+          ${_cobrarPersonas.map((p, pi) =>
+            `<button onclick="assignItemSeparado(${pi},${idx})"
+              style="padding:4px 8px;border-radius:6px;border:1.5px solid var(--caramel);background:white;cursor:pointer;font-size:11px;font-weight:700;color:var(--caramel);font-family:'DM Sans',sans-serif;white-space:nowrap;"
+              title="Asignar a ${p.name}">→ ${p.name.split(' ')[0]||'P'+(pi+1)}</button>`
+          ).join('')}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  // Botones acción
+  const allAssigned = unassigned.length === 0;
+  const allHaveMethod = _cobrarPersonas.every(p => p.items.length === 0 || p.method !== '');
+  html += `
+    <button onclick="addCobrarPersona()"
+      style="width:100%;padding:9px;border-radius:var(--radius-sm);border:1.5px dashed var(--caramel);background:transparent;color:var(--caramel);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px;">
+      ＋ Agregar persona
+    </button>`;
+
+  if (allAssigned && allHaveMethod) {
+    html += `
+      <button onclick="cobrarSeparado()"
+        style="width:100%;padding:12px;border-radius:var(--radius-sm);border:none;background:var(--success);color:white;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">
+        ✅ Confirmar cobros separados
+      </button>`;
+  } else {
+    html += `<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:6px 0;">
+      ${!allAssigned ? '⚠️ Asigna todos los productos' : '⚠️ Selecciona método de pago para cada persona'}
+    </div>`;
+  }
+
+  body.innerHTML = html;
+}
+
+function renameCobrarPersona(pi, name) {
+  _cobrarPersonas[pi].name = name || `Persona ${pi + 1}`;
+}
+
+function addCobrarPersona() {
+  _cobrarPersonas.push({ name: `Persona ${_cobrarPersonas.length + 1}`, items: [], method: '' });
+  const key   = 'mesa' + _cobrarMesaNum;
+  const st    = window.mesasState[key];
+  const items = Array.isArray(st.items) ? st.items : Object.values(st.items || {});
+  _renderSeparadoUI(items);
+}
+
+function removeCobrarPersona(pi) {
+  const freed = _cobrarPersonas[pi].items;
+  _cobrarPersonas.splice(pi, 1);
+  if (_cobrarPersonas.length === 0) {
+    _cobrarPersonas.push({ name: 'Persona 1', items: [], method: '' });
+  }
+  // Devolver ítems liberados a la primera persona o dejarlos sin asignar
+  // (quedarán en "Sin asignar" automáticamente)
+  const key   = 'mesa' + _cobrarMesaNum;
+  const st    = window.mesasState[key];
+  const items = Array.isArray(st.items) ? st.items : Object.values(st.items || {});
+  _renderSeparadoUI(items);
+}
+
+function assignItemSeparado(pi, itemIdx) {
+  // Quitar de cualquier otra persona primero
+  _cobrarPersonas.forEach(p => { p.items = p.items.filter(i => i !== itemIdx); });
+  _cobrarPersonas[pi].items.push(itemIdx);
+  const key   = 'mesa' + _cobrarMesaNum;
+  const st    = window.mesasState[key];
+  const items = Array.isArray(st.items) ? st.items : Object.values(st.items || {});
+  _renderSeparadoUI(items);
+}
+
+function unassignItemSeparado(pi, itemIdx) {
+  _cobrarPersonas[pi].items = _cobrarPersonas[pi].items.filter(i => i !== itemIdx);
+  const key   = 'mesa' + _cobrarMesaNum;
+  const st    = window.mesasState[key];
+  const items = Array.isArray(st.items) ? st.items : Object.values(st.items || {});
+  _renderSeparadoUI(items);
+}
+
+function setCobrarPersonaMethod(pi, method) {
+  _cobrarPersonas[pi].method = method;
+  const key   = 'mesa' + _cobrarMesaNum;
+  const st    = window.mesasState[key];
+  const items = Array.isArray(st.items) ? st.items : Object.values(st.items || {});
+  _renderSeparadoUI(items);
+}
+
+function cobrarSeparado() {
+  const key   = 'mesa' + _cobrarMesaNum;
+  const st    = window.mesasState[key];
+  const items = Array.isArray(st.items) ? st.items : Object.values(st.items || {});
+
+  // Confirmar efectivo si alguno paga en cash
+  for (const persona of _cobrarPersonas) {
+    if (!persona.items.length) continue;
+    const subtotal = persona.items.reduce((s, idx) => s + (items[idx]?.price || 0), 0);
+    if (persona.method === 'cash') {
+      const received = parseFloat(prompt(`${persona.name} — Subtotal: $${subtotal.toFixed(2)}\n¿Cuánto recibiste?`));
+      if (isNaN(received)) return;
+      if (received < subtotal) { alert(`Monto insuficiente para ${persona.name}`); return; }
+      const cambio = received - subtotal;
+      if (cambio > 0) alert(`Cambio para ${persona.name}: $${cambio.toFixed(2)}`);
+    }
+  }
+
+  // Registrar cada cobro por separado en el historial
+  _cobrarPersonas.forEach(persona => {
+    if (!persona.items.length) return;
+    const subItems = persona.items.map(idx => items[idx]);
+    const subtotal = subItems.reduce((s, i) => s + (i?.price || 0), 0);
+    _registrarVentaMesa(_cobrarMesaNum, subItems, subtotal, persona.method, persona.name);
+  });
+
+  window.mesasState[key].paid = true;
+  saveMesasToFirebase();
+  window.renderMesasScreen();
+  document.getElementById('mesaCobrarModal').classList.remove('open');
+  showToast(`✅ Mesa ${_cobrarMesaNum} — ${_cobrarPersonas.filter(p=>p.items.length).length} cobros registrados`);
+}
+
+/* ── Helper compartido: registrar venta en Firebase ── */
+function _registrarVentaMesa(mesaNum, items, total, method, clienteName) {
+  const now     = new Date();
+  const orderId = window.orderNumber;
+  const saleOrder = {
+    id: orderId,
+    items: items,
+    type: 'aqui',
+    paymentMethod: method,
+    total: total,
+    notes: '',
+    customerName: clienteName || '',
+    mesa: mesaNum,
+    timestamp: now.toISOString(),
+    timeStr: now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+    status: 'done'
+  };
+  if (window._fbReady) {
+    window._set(window._ref(window._db, `salesHistory/${orderId}`), saleOrder);
+    window._set(window._ref(window._db, 'orderNumber'), orderId + 1);
+  } else {
+    window.salesHistory.push(saleOrder);
+    window.orderNumber = orderId + 1;
+  }
+  window.orderNumber = orderId + 1;
+  document.getElementById('order-number').textContent = String(orderId + 1).padStart(3, '0');
+}
+
+// ── Agregar producto directamente a una mesa ──
+let _mesaAddTarget = null;
+
+function openMesaAddProduct(mesaNum) {
+  _mesaAddTarget = mesaNum;
+  const el = document.getElementById('mesa-add-title');
+  if(el) el.textContent = `➕ Agregar a Mesa ${mesaNum}`;
+  const search = document.getElementById('mesa-add-search');
+  if(search) search.value = '';
+  renderMesaProductList();
+  document.getElementById('mesaAddModal').classList.add('open');
+}
+
+function renderMesaProductList() {
+  const q = (document.getElementById('mesa-add-search')?.value||'').toLowerCase();
+  const list = document.getElementById('mesa-add-product-list');
+  if(!list) return;
+  const items = menuItems.filter(i=>i.active && (!q || i.name.toLowerCase().includes(q)));
+  if(!items.length) { list.innerHTML = '<p style="color:var(--text-muted);font-size:13px;padding:8px 0">No se encontraron productos</p>'; return; }
+  list.innerHTML = items.map(i=>`
+    <button onclick="selectMesaProduct(${i.id})"
+      style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--caramel);background:white;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;text-align:left;margin-bottom:6px;transition:all 0.15s"
+      onmouseover="this.style.background='var(--caramel-pale)'" onmouseout="this.style.background='white'">
+      <span style="font-size:22px">${i.emoji}</span>
+      <span style="flex:1;font-size:14px;font-weight:600;color:var(--text-main)">${i.name}</span>
+      <span style="font-size:14px;font-weight:700;color:var(--caramel)">$${i.price.toFixed(2)}</span>
+    </button>`).join('');
+}
+
+function selectMesaProduct(itemId) {
+  const mesaNum = _mesaAddTarget;
+  const item = menuItems.find(i=>i.id===itemId);
+  if(!item || !mesaNum) return;
+  document.getElementById('mesaAddModal').classList.remove('open');
+
+  const opts = item.options||{};
+  const secs = [];
+  if(opts.temp)   secs.push({key:'temp',   label:'Temperatura',   options:opts.temp});
+  if(opts.milk)   secs.push({key:'milk',   label:'Tipo de leche', options:opts.milk});
+  if(opts.flavor) secs.push({key:'flavor', label:'Sabor extra',   options:opts.flavor});
+
+  if(secs.length) {
+    // Abrir modal de personalización con destino = mesa
+    pendingModal = {item, selections:{}, qty:1, addToMesaDirect: mesaNum};
+    if(opts.temp)   pendingModal.selections.temp   = opts.temp[0];
+    if(opts.milk)   pendingModal.selections.milk   = opts.milk[0];
+    if(opts.flavor) pendingModal.selections.flavor = opts.flavor[0];
+    document.getElementById('modal-item-name').textContent  = item.emoji+' '+item.name;
+    document.getElementById('modal-item-price').textContent = '$'+item.price.toFixed(2);
+
+    let html = `<div class="modal-section" style="display:none"><span id="modal-qty">1</span></div>`;
+    secs.forEach(s => {
+      html += `<div class="modal-section"><div class="modal-section-title">${s.label}</div><div class="option-chips">
+        ${s.options.map(opt=>
+          `<div class="${pendingModal.selections[s.key]===opt?'chip selected':'chip'}" data-key="${s.key}" data-val="${opt.replace(/"/g,'&quot;')}" onclick="selectChip(this)">${opt}</div>`
+        ).join('')}
+      </div></div>`;
+    });
+    document.getElementById('modal-options').innerHTML = html;
+    document.getElementById('btn-add').textContent = '+ Agregar a mesa';
+    document.getElementById('customModal').classList.add('open');
+  } else {
+    _commitAddToMesa(item, [], mesaNum);
+  }
+}
+
+function _commitAddToMesa(item, mods, mesaNum) {
+  const key = 'mesa'+mesaNum;
+  if(!window.mesasState[key]) window.mesasState[key] = {items:[], paid:false};
+  const entry = {id:item.id, name:item.name, emoji:item.emoji||'☕', price:item.price, mods:mods||[], orderId:'direct-'+Date.now()};
+  window.mesasState[key].items.push(entry);
+  saveMesasToFirebase();
+  window.renderMesasScreen();
+  showToast(`${item.emoji||'☕'} ${item.name} agregado a Mesa ${mesaNum} · $${item.price.toFixed(2)}`);
+
+  // Solo enviar al barista (NO registrar en ventas — eso se hace al cobrar)
+  const now = new Date();
+  const orderId = window.orderNumber;
+  const baristaOrder = {
+    id: orderId,
+    items: [entry],
+    type: 'aqui',
+    paymentMethod: '',
+    total: item.price,
+    notes: '',
+    customerName: '',
+    mesa: mesaNum,
+    timestamp: now.toISOString(),
+    timeStr: now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
+    status: 'pending'
+  };
+  if(window._fbReady) {
+    window._set(window._ref(window._db, `pendingOrders/${orderId}`), baristaOrder);
+    window._set(window._ref(window._db, 'orderNumber'), orderId+1);
+  } else {
+    window.pendingOrders.push(baristaOrder);
+    window.orderNumber = orderId+1;
+    document.getElementById('order-number').textContent = String(orderId+1).padStart(3,'0');
+  }
+  window.orderNumber = orderId+1;
+  document.getElementById('order-number').textContent = String(orderId+1).padStart(3,'0');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1584,7 +2394,14 @@ window.renderStats = function(){
   document.getElementById('kpi-digital-count').textContent=digS.length+' venta'+(digS.length!==1?'s':'');
   document.getElementById('kpi-avg').textContent          ='$'+avg.toFixed(0);
   document.getElementById('sales-tbody').innerHTML=
-    [...sales].reverse().map(s=>`<tr>
+    [...sales].reverse().map(s=>{
+      const duenoCol = s.esDueno
+        ? `<td style="white-space:nowrap">
+            <div style="font-weight:700;color:var(--caramel)">👑 ${s.duenoNombre}</div>
+            ${(s.duenoItems||[]).map(d=>`<div style="font-size:10px;color:var(--text-muted)">${d.name}: <b>${d.label}</b></div>`).join('')}
+           </td>`
+        : '<td style="color:var(--text-muted);font-size:12px">—</td>';
+      return `<tr>
       <td><input type="checkbox" class="sale-checkbox" data-id="${s.id}" style="cursor:pointer"></td>
       <td style="font-weight:700">#${String(s.id).padStart(3,'0')}</td>
       <td>${s.timeStr}</td>
@@ -1592,7 +2409,8 @@ window.renderStats = function(){
       <td><span class="pay-tag ${s.type==='aqui'?'pay-aqui':'pay-llevar'}">${s.type==='aqui'?'Para aquí':'Para llevar'}</span></td>
       <td><span class="pay-tag ${s.paymentMethod==='cash'?'pay-cash':'pay-digital'}">${s.paymentMethod==='cash'?'💵 Efectivo':'💳 Digital'}</span></td>
       <td style="font-weight:700">$${s.total.toFixed(2)}</td>
-    </tr>`).join('')||`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">No hay ventas en este período</td></tr>`;
+      ${duenoCol}
+    </tr>`;}).join('')||`<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">No hay ventas en este período</td></tr>`;
 };
 
 function renderCharts(){
@@ -1639,8 +2457,8 @@ function exportExcel(){
   const digT =sales.filter(s=>s.paymentMethod==='digital').reduce((a,s)=>a+s.total,0);
   const tot  =sales.reduce((a,s)=>a+s.total,0);
   const rows=[
-    ['#','Fecha','Hora','Artículos','Tipo','Pago','Total'],
-    ...sales.map(s=>['#'+String(s.id).padStart(3,'0'),new Date(s.timestamp).toLocaleDateString('es-MX'),s.timeStr,s.items.map(i=>i.name).join(', '),s.type==='aqui'?'Para aquí':'Para llevar',s.paymentMethod==='cash'?'Efectivo':'Digital',s.total]),
+    ['#','Fecha','Hora','Artículos','Tipo','Pago','Total','Dueño','Beneficio'],
+    ...sales.map(s=>{const _dl=s.esDueno&&s.duenoItems?s.duenoItems.map(d=>d.name+': '+d.label).join(' / '):'';return['#'+String(s.id).padStart(3,'0'),new Date(s.timestamp).toLocaleDateString('es-MX'),s.timeStr,s.items.map(i=>i.name).join(', '),s.type==='aqui'?'Para aqui':'Para llevar',s.paymentMethod==='cash'?'Efectivo':'Digital',s.total,s.esDueno?s.duenoNombre:'',_dl];}),
     [],
     ['','','','','','TOTAL EFECTIVO:',cashT],
     ['','','','','','TOTAL DIGITAL:',digT],
@@ -1672,6 +2490,139 @@ function exportPDF(){
   const w=window.open(URL.createObjectURL(new Blob([html],{type:'text/html'})),'_blank');
   if(!w) showToast('Permite ventanas emergentes para exportar PDF');
   else   showToast('📄 Abriendo reporte PDF…');
+}
+
+// ── PDF con los dos cortes del día ──
+function exportPDFCortes() {
+  const tod = new Date().toDateString();
+  const todLabel = new Date().toLocaleDateString('es-MX', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+  // Horarios de corte para hoy
+  const hoy = new Date();
+  const cut1 = new Date(hoy); cut1.setHours(7,  0, 0, 0);  // inicio jornada 7 AM
+  const cut2 = new Date(hoy); cut2.setHours(14,30, 0, 0);  // corte 1: 2:30 PM
+  const cut3 = new Date(hoy); cut3.setHours(21, 0, 0, 0);  // corte 2: 9:00 PM
+
+  // Si hay cortes manuales/automáticos registrados hoy, usarlos
+  const tCuts = (window.cuts||[]).filter(c=>c.date===tod).sort((a,b)=>new Date(a.cutAt)-new Date(b.cutAt));
+  let manana_from = cut1, manana_to = cut2, tarde_from = cut2, tarde_to = cut3;
+  if (tCuts.length >= 1) { manana_to = new Date(tCuts[0].cutAt); tarde_from = new Date(tCuts[0].cutAt); }
+  if (tCuts.length >= 2) { tarde_to  = new Date(tCuts[1].cutAt); }
+
+  const allTodaySales = (window.salesHistory||[]).filter(s => new Date(s.timestamp).toDateString() === tod);
+
+  const salesManana = allTodaySales.filter(s => {
+    const t = new Date(s.timestamp);
+    return t >= manana_from && t < manana_to;
+  });
+  const salesTarde = allTodaySales.filter(s => {
+    const t = new Date(s.timestamp);
+    return t >= tarde_from && t <= tarde_to;
+  });
+
+  if (!salesManana.length && !salesTarde.length) {
+    showToast('No hay ventas de hoy para el reporte');
+    return;
+  }
+
+  function buildSection(sales, label, rangeStr) {
+    if (!sales.length) return `
+      <div class="cut-section">
+        <div class="cut-header">${label} <span class="cut-range">${rangeStr}</span></div>
+        <p style="color:#8A7060;font-size:12px;padding:12px 0;">Sin ventas en este período</p>
+      </div>`;
+    const cashT = sales.filter(s=>s.paymentMethod==='cash').reduce((a,s)=>a+s.total,0);
+    const digT  = sales.filter(s=>s.paymentMethod==='digital').reduce((a,s)=>a+s.total,0);
+    const tot   = sales.reduce((a,s)=>a+s.total,0);
+    const rows  = [...sales].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp)).map(s=>`
+      <tr>
+        <td>#${String(s.id).padStart(3,'0')}</td>
+        <td>${s.timeStr}</td>
+        <td>${s.items.map(i=>i.name).join(', ')}</td>
+        <td>${s.type==='aqui'?'Para aquí':'Para llevar'}</td>
+        <td class="${s.paymentMethod==='cash'?'tag-cash':'tag-dig'}">${s.paymentMethod==='cash'?'Efectivo':'Digital'}</td>
+        <td style="text-align:right;font-weight:700">$${s.total.toFixed(2)}</td>
+      </tr>`).join('');
+    return `
+      <div class="cut-section">
+        <div class="cut-header">${label} <span class="cut-range">${rangeStr}</span></div>
+        <table>
+          <thead><tr><th>#</th><th>Hora</th><th>Artículos</th><th>Tipo</th><th>Pago</th><th>Total</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="cut-totals">
+          <span class="cash">💵 Efectivo: $${cashT.toFixed(2)}</span>
+          <span class="dig">💳 Digital: $${digT.toFixed(2)}</span>
+          <span class="grand">TOTAL: $${tot.toFixed(2)}</span>
+          <span class="count">${sales.length} transacciones</span>
+        </div>
+      </div>`;
+  }
+
+  const t1Label = tCuts[0]?.cutAtStr || '2:30 PM';
+  const t2Label = tCuts[1]?.cutAtStr || '9:00 PM';
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Druppa — Cortes del día</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:Arial,sans-serif;padding:28px;color:#2C1A0E;font-size:12px;background:white;}
+    .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:3px solid #C07840;}
+    .brand{font-size:26px;font-weight:900;color:#C07840;letter-spacing:-0.5px;}
+    .brand span{color:#2C1A0E;}
+    .page-sub{font-size:13px;color:#8A7060;margin-top:4px;}
+    .print-date{text-align:right;font-size:11px;color:#8A7060;}
+    .cut-section{margin-bottom:28px;border:1.5px solid #E0D4C0;border-radius:8px;overflow:hidden;}
+    .cut-header{background:#2C1A0E;color:white;padding:10px 16px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:space-between;}
+    .cut-range{font-size:11px;font-weight:400;color:rgba(255,255,255,0.65);}
+    table{width:100%;border-collapse:collapse;}
+    th{background:#FAF0E0;color:#5C3D1E;padding:7px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+    td{padding:7px 10px;border-bottom:1px solid #F0E8D8;font-size:12px;}
+    tr:last-child td{border-bottom:none;}
+    .tag-cash{color:#4A7C59;font-weight:700;}
+    .tag-dig{color:#1A5FAD;font-weight:700;}
+    .cut-totals{background:#FAF0E0;padding:12px 16px;display:flex;gap:18px;flex-wrap:wrap;align-items:center;border-top:1.5px solid #E0D4C0;}
+    .cash{color:#4A7C59;font-weight:700;font-size:13px;}
+    .dig{color:#1A5FAD;font-weight:700;font-size:13px;}
+    .grand{color:#C07840;font-weight:900;font-size:15px;margin-left:auto;}
+    .count{color:#8A7060;font-size:11px;}
+    .day-summary{background:#2C1A0E;color:white;border-radius:8px;padding:14px 18px;margin-top:8px;display:flex;gap:28px;flex-wrap:wrap;align-items:center;}
+    .day-summary .lbl{font-size:10px;opacity:0.55;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;}
+    .day-summary .val{font-size:18px;font-weight:900;}
+    .day-summary .val.c{color:#7FD47F;}
+    .day-summary .val.d{color:#7EB8F7;}
+    .day-summary .val.t{color:#FFD97D;}
+    @media print{body{padding:14px;}.cut-section{page-break-inside:avoid;}}
+  </style>
+  </head><body>
+  <div class="page-header">
+    <div>
+      <div class="brand">☕ Druppa<span>.</span></div>
+      <div class="page-sub">Reporte de cortes — ${todLabel}</div>
+    </div>
+    <div class="print-date">Generado: ${new Date().toLocaleString('es-MX')}</div>
+  </div>
+
+  ${buildSection(salesManana, '✂️ Corte 1 — Mañana', '7:00 AM – ' + t1Label)}
+  ${buildSection(salesTarde,  '✂️ Corte 2 — Tarde',  t1Label + ' – ' + t2Label)}
+
+  ${(()=>{
+    const tot  = allTodaySales.reduce((a,s)=>a+s.total,0);
+    const cash = allTodaySales.filter(s=>s.paymentMethod==='cash').reduce((a,s)=>a+s.total,0);
+    const dig  = allTodaySales.filter(s=>s.paymentMethod==='digital').reduce((a,s)=>a+s.total,0);
+    return `<div class="day-summary">
+      <div><div class="lbl">Ventas del día</div><div class="val">${allTodaySales.length} transacciones</div></div>
+      <div><div class="lbl">Efectivo total</div><div class="val c">$${cash.toFixed(2)}</div></div>
+      <div><div class="lbl">Digital total</div><div class="val d">$${dig.toFixed(2)}</div></div>
+      <div><div class="lbl">Gran total del día</div><div class="val t">$${tot.toFixed(2)}</div></div>
+    </div>`;
+  })()}
+
+  <script>window.onload=()=>window.print()<\/script>
+  </body></html>`;
+
+  const w = window.open(URL.createObjectURL(new Blob([html], {type:'text/html'})), '_blank');
+  if (!w) showToast('Permite ventanas emergentes para exportar PDF');
+  else    showToast('✂️ Abriendo reporte de cortes…');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1747,25 +2698,21 @@ window.renderCutBanner = function(){
   const tod  =new Date().toDateString();
   const tCuts=(window.cuts||[]).filter(c=>c.date===tod);
   if(!tCuts.length){
-    banner.style.display='flex';
     banner.innerHTML=`
-      <div class="cut-info"><span class="cut-badge">Sin cortes hoy</span><span style="margin-left:10px">Automático: <strong>2:30 PM</strong> y <strong>10:00 PM</strong></span></div>
-      <button class="cut-btn" onclick="manualCut()">✂️ Hacer corte ahora</button>`;
+      <div style="padding:4px 10px 8px;font-size:11px;color:rgba(250,247,242,0.45);">Sin cortes hoy<br>Auto: 2:30 PM y 9:00 PM</div>
+      <button class="sidebar-btn" onclick="manualCut()" style="color:#FFD97D;">✂️ Hacer corte ahora</button>`;
   } else {
     const last =tCuts[tCuts.length-1];
     const after=(window.salesHistory||[]).filter(s=>new Date(s.timestamp)>new Date(last.cutAt)&&new Date(s.timestamp).toDateString()===tod);
     const aft$ =after.reduce((a,s)=>a+s.total,0);
-    banner.style.display='flex';
     banner.innerHTML=`
-      <div class="cut-info" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <span class="cut-badge">${last.label} — ${last.cutAtStr}</span>
-        <span>Desde el corte: <strong>$${aft$.toFixed(2)}</strong> (${after.length} ventas)</span>
-        ${tCuts.map(c=>`<button class="cut-btn" style="font-size:11px;padding:5px 10px" onclick="viewCutSales('${c.id}')">📋 ${c.label}</button>`).join('')}
+      <div style="padding:4px 10px 6px;">
+        <div style="font-size:11px;font-weight:700;color:var(--caramel-light);">${last.label} — ${last.cutAtStr}</div>
+        <div style="font-size:11px;color:rgba(250,247,242,0.55);margin-top:2px;">Desde corte: <strong style="color:rgba(250,247,242,0.85)">$${aft$.toFixed(2)}</strong> (${after.length} ventas)</div>
       </div>
-      <div style="display:flex;gap:8px">
-        ${tCuts.length<2?`<button class="cut-btn" onclick="manualCut()">✂️ Hacer corte</button>`:''}
-        <button class="cut-btn danger" onclick="clearTodayCuts()">🗑 Borrar cortes de hoy</button>
-      </div>`;
+      ${tCuts.map(c=>`<button class="sidebar-btn" onclick="viewCutSales('${c.id}')" style="color:rgba(250,247,242,0.75);">📋 Ver ${c.label}</button>`).join('')}
+      ${tCuts.length<2?`<button class="sidebar-btn" onclick="manualCut()" style="color:#FFD97D;">✂️ Hacer corte</button>`:''}
+      <button class="sidebar-btn" onclick="clearTodayCuts()" style="color:#f08080;">🗑 Borrar cortes</button>`;
   }
 };
 
@@ -1833,14 +2780,42 @@ function renderMenuEditor(){
 
 function triggerPhotoUpload(id){ document.getElementById('photo-input-'+id).click(); }
 
-function handlePhotoUpload(id,input){
-  const file=input.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const item=menuItems.find(i=>i.id===id);
-    if(item){ item.photo=e.target.result; saveMenuToFirebase(); renderMenuEditor(); buildMenu(); showToast('📷 Foto actualizada'); }
+function handlePhotoUpload(id, input){
+  const file = input.files[0]; if(!file) return;
+  // Resize image before saving to keep size manageable
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX = 400;
+      const ratio = Math.min(MAX/img.width, MAX/img.height, 1);
+      canvas.width  = Math.round(img.width  * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      const compressed = canvas.toDataURL('image/jpeg', 0.75);
+      // Save to localStorage (persists across sessions, no size limit issues)
+      try { localStorage.setItem('druppa_photo_'+id, compressed); } catch(e) {}
+      const item = menuItems.find(i=>i.id===id);
+      if(item){
+        item.photo = compressed;
+        // Also save the key in Firebase so other devices know this item has a photo
+        saveMenuToFirebase();
+        renderMenuEditor(); buildMenu();
+        showToast('📷 Foto guardada');
+      }
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
+}
+
+// Load photos from localStorage on startup
+function loadPhotosFromLocalStorage() {
+  menuItems.forEach(item => {
+    const saved = localStorage.getItem('druppa_photo_'+item.id);
+    if(saved && !item.photo) item.photo = saved;
+  });
 }
 
 function updateItem(id,key,val){ const i=menuItems.find(i=>i.id===id); if(i){ i[key]=val; saveMenuToFirebase(); buildMenu(); } }
@@ -1862,6 +2837,7 @@ function showToast(msg){
 // ══════════════════════════════════════════════════════════════
 document.getElementById('order-number').textContent = String(window.orderNumber).padStart(3,'0');
 buildMenu();
+loadPhotosFromLocalStorage();
 renderOrderPanel();
 checkAutocut();
 setInterval(checkAutocut, 60000);
